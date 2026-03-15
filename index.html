@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🍚 이유식 죽 계산기</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div class="app">
+
+    <header class="app-header">
+      <div class="header-content">
+        <div class="app-icon">🍚</div>
+        <h1>이유식 죽 계산기</h1>
+        <p class="app-sub">우리 아기 맞춤 재료량을 계산해요 🌿</p>
+      </div>
+      <div class="sync-pill" id="sync-pill">
+        <span class="sync-dot" id="sync-dot"></span>
+        <span id="sync-label">연결 중...</span>
+      </div>
+    </header>
+
+    <div class="tab-bar">
+      <button class="tab active" data-tab="calc" onclick="switchTab('calc')">
+        🧮 계산하기
+      </button>
+      <button class="tab" data-tab="recipes" onclick="switchTab('recipes')">
+        📋 레시피 보관함
+        <span class="recipe-badge" id="recipe-badge" style="display:none"></span>
+      </button>
+    </div>
+
+    <!-- TAB: 계산하기 -->
+    <div class="tab-content active" id="tab-calc">
+
+      <div class="card">
+        <div class="card-title">⚙️ 기본 설정</div>
+        <div class="setting-grid">
+          <div class="setting-item">
+            <div class="setting-label">💧 몇 배죽</div>
+            <div class="setting-control">
+              <button class="stepper-btn" onclick="stepValue('n-mult',-1)">−</button>
+              <input type="number" id="n-mult" value="10" min="1" max="30" />
+              <button class="stepper-btn" onclick="stepValue('n-mult',1)">+</button>
+            </div>
+            <div class="setting-hint">물 = 잡곡합 × 배수</div>
+          </div>
+          <div class="setting-item">
+            <div class="setting-label">🍽️ 하루 끼니</div>
+            <div class="setting-control">
+              <button class="stepper-btn" onclick="stepValue('meals-per-day',-1)">−</button>
+              <input type="number" id="meals-per-day" value="2" min="1" max="10" />
+              <button class="stepper-btn" onclick="stepValue('meals-per-day',1)">+</button>
+            </div>
+            <div class="setting-hint">끼 / 일</div>
+          </div>
+          <div class="setting-item">
+            <div class="setting-label">📅 조리 일수</div>
+            <div class="setting-control">
+              <button class="stepper-btn" onclick="stepValue('days',-1)">−</button>
+              <input type="number" id="days" value="5" min="1" max="30" />
+              <button class="stepper-btn" onclick="stepValue('days',1)">+</button>
+            </div>
+            <div class="setting-hint">일치</div>
+          </div>
+        </div>
+        <div class="total-meals-badge">
+          총 <strong id="total-meals-display">10</strong>끼분 계산
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🌾 잡곡 목록 <span class="card-sub">1회 기준 (g)</span></div>
+        <div class="grain-list" id="grain-list"></div>
+        <button class="add-grain-btn" id="add-grain-btn">＋ 잡곡 추가하기</button>
+      </div>
+
+      <div class="card result-card">
+        <div class="card-title">📊 필요한 재료량</div>
+        <div class="ingredient-list" id="ingredient-list"></div>
+        <div class="summary-box">
+          <div class="summary-row">
+            <span>🌾 잡곡 합계</span>
+            <strong id="r-grain-total">—</strong>
+          </div>
+          <div class="summary-row">
+            <span>💧 물</span>
+            <strong id="r-water-total">—</strong>
+          </div>
+          <div class="summary-divider"></div>
+          <div class="summary-row total">
+            <span>🍲 전체 재료 합계</span>
+            <strong id="r-grand-total">—</strong>
+          </div>
+          <div class="porridge-hint" id="porridge-hint"></div>
+        </div>
+      </div>
+
+      <div class="card save-card">
+        <div class="card-title">💾 레시피 저장</div>
+        <input class="save-input" type="text" id="recipe-name" placeholder="레시피 이름 (예: 7개월 오트밀죽 🌾)" />
+        <textarea class="save-memo" id="recipe-memo" placeholder="메모 (선택) — 아기 반응, 특이사항 등 자유롭게 ✏️" rows="2"></textarea>
+        <button class="save-btn" id="save-btn">🌟 레시피 저장하기</button>
+      </div>
+
+    </div>
+
+    <!-- TAB: 레시피 보관함 -->
+    <div class="tab-content" id="tab-recipes">
+      <div class="card">
+        <div class="card-title">📋 저장된 레시피</div>
+        <div id="recipes-list">
+          <div class="empty-state">
+            <div class="empty-icon">🥣</div>
+            <div>불러오는 중...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
