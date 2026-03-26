@@ -20,18 +20,12 @@ const RECIPES_COL  = collection(db, 'porridge_recipes');
 
 // ── State ──────────────────────────────────────────────────────────────────
 let grains = [
-  { name: '쌀',   g: 20, emoji: '🌾' },
-  { name: '찹쌀', g: 5,  emoji: '🍚' },
-  { name: '현미', g: 3,  emoji: '🌿' },
-  { name: '보리', g: 3,  emoji: '🌰' },
-  { name: '귀리', g: 3,  emoji: '🫘' },
-  { name: '수수', g: 2,  emoji: '🌱' },
-];
-
-const GRAIN_EMOJIS = [
-  '🌾','🍚','🌿','🌰','🫘','🌱','🍃','🫚','✨',
-  '🥜','🌽','🍠','🥕','🫛','🌻','🍋','🍇','🍓',
-  '⭐','💛','🧡','🌸','🫐','🥦','🎋','🍀','🌼',
+  { name: '쌀',   g: 20 },
+  { name: '찹쌀', g: 5  },
+  { name: '현미', g: 3  },
+  { name: '보리', g: 3  },
+  { name: '귀리', g: 3  },
+  { name: '수수', g: 2  },
 ];
 let saveSettingsTm = null;
 let fbReady = false;
@@ -42,7 +36,7 @@ const num = id => +$(id).value || 0;
 
 // ── Sync status ────────────────────────────────────────────────────────────
 function syncStatus(state, msg) {
-  $('sync-dot').className    = 'sync-dot ' + state;
+  $('sync-dot').className     = 'sync-dot ' + state;
   $('sync-label').textContent = msg;
 }
 
@@ -63,7 +57,7 @@ window.stepValue = (id, delta) => {
   calc();
 };
 
-// ── Load settings from Firestore ───────────────────────────────────────────
+// ── Load settings ──────────────────────────────────────────────────────────
 async function loadSettings() {
   syncStatus('loading', '연결 중...');
   try {
@@ -75,7 +69,7 @@ async function loadSettings() {
       if (d.meals)  $('meals-per-day').value = d.meals;
       if (d.days)   $('days').value          = d.days;
     }
-    syncStatus('ok', '동기화 중');
+    syncStatus('ok', '동기화됨 ✓');
     fbReady = true;
   } catch (e) {
     syncStatus('err', '연결 실패');
@@ -151,8 +145,7 @@ window.removeGrain = (i) => {
 };
 
 $('add-grain-btn').addEventListener('click', () => {
-  const nextEmoji = GRAIN_EMOJIS[grains.length % GRAIN_EMOJIS.length];
-  grains.push({ name: '새 잡곡', g: 1, emoji: nextEmoji });
+  grains.push({ name: '새 잡곡', g: 1 });
   renderGrains();
   calc();
   scheduleSettingsSave();
@@ -164,10 +157,10 @@ $('add-grain-btn').addEventListener('click', () => {
 
 // ── Calculation ────────────────────────────────────────────────────────────
 function calc() {
-  const n           = num('n-mult')        || 10;
-  const meals       = num('meals-per-day') || 1;
-  const days        = num('days')          || 1;
-  const totalMeals  = meals * days;
+  const n          = num('n-mult')        || 10;
+  const meals      = num('meals-per-day') || 1;
+  const days       = num('days')          || 1;
+  const totalMeals = meals * days;
 
   $('total-meals-display').textContent = totalMeals;
 
@@ -175,11 +168,10 @@ function calc() {
   const water1      = grainTotal1 * n;
   const porridge1   = grainTotal1 + water1;
 
-  // Ingredient rows
   const ingList = $('ingredient-list');
   ingList.innerHTML = '';
 
-  grains.forEach((g, i) => {
+  grains.forEach((g) => {
     const totalG = (g.g || 0) * totalMeals;
     const row    = document.createElement('div');
     row.className = 'ingredient-row';
@@ -193,7 +185,6 @@ function calc() {
     ingList.appendChild(row);
   });
 
-  // Water row
   const waterRow = document.createElement('div');
   waterRow.className = 'ingredient-row water-row';
   waterRow.innerHTML = `
@@ -205,11 +196,9 @@ function calc() {
   `;
   ingList.appendChild(waterRow);
 
-  // Summary
   $('r-grain-total').textContent = (grainTotal1 * totalMeals).toFixed(0) + 'g';
   $('r-water-total').textContent = (water1      * totalMeals).toFixed(0) + 'g';
   $('r-grand-total').textContent = (porridge1   * totalMeals).toFixed(0) + 'g';
-
   $('porridge-hint').textContent =
     `🍲 1회 베이스죽 재료량 약 ${porridge1.toFixed(0)}g · 밥솥 조리 후 실제 완성량은 약간 줄어들어요`;
 
@@ -290,12 +279,11 @@ window.loadRecipe = (recipe) => {
 
 // ── Real-time recipes listener ─────────────────────────────────────────────
 onSnapshot(RECIPES_COL, (snap) => {
-  const list = snap.docs.map(d => d.data());
-  renderRecipes(list);
+  renderRecipes(snap.docs.map(d => d.data()));
 }, (err) => {
   syncStatus('err', 'Firestore 오류');
   $('recipes-list').innerHTML =
-    '<div class="empty-state"><div class="empty-icon">⚠️</div><div>Firestore 읽기 실패.<br>보안 규칙을 확인해주세요.</div></div>';
+    '<div class="empty-state"><div class="empty-icon">⚠️</div><div>읽기 실패. 보안 규칙을 확인해주세요.</div></div>';
 });
 
 // ── Render recipe list ─────────────────────────────────────────────────────
@@ -322,18 +310,18 @@ function renderRecipes(list) {
   [...list]
     .sort((a, b) => (b.createdTs || 0) - (a.createdTs || 0))
     .forEach(r => {
-      const div      = document.createElement('div');
-      div.className  = 'recipe-card';
+      const div     = document.createElement('div');
+      div.className = 'recipe-card';
       const grainStr = r.grains.map(g => `${esc(g.name)} ${g.g}g`).join(' · ');
-      const memoHtml = r.memo
-        ? `<div class="rc-memo">✏️ ${esc(r.memo)}</div>` : '';
+      const memoHtml = r.memo ? `<div class="rc-memo">✏️ ${esc(r.memo)}</div>` : '';
 
       div.innerHTML = `
         <div class="rc-header">
           <span class="rc-name">🍚 ${esc(r.name)}</span>
           <div class="rc-top-right">
             <span class="rc-badge">${r.n}배죽</span>
-            <button class="rc-del" onclick="event.stopPropagation(); deleteRecipe('${r.id}')" title="삭제">🗑️</button>
+            <button class="rc-edit" onclick="event.stopPropagation(); openEditModal('${r.id}')" title="수정">✏️</button>
+            <button class="rc-del"  onclick="event.stopPropagation(); deleteRecipe('${r.id}')" title="삭제">🗑️</button>
           </div>
         </div>
         <div class="rc-grains">🌾 ${grainStr}</div>
@@ -351,6 +339,124 @@ function renderRecipes(list) {
       el.appendChild(div);
     });
 }
+
+// ── Edit modal ─────────────────────────────────────────────────────────────
+let editRecipe = null;
+let editGrains = [];
+
+window.openEditModal = async (id) => {
+  const snap = await getDoc(doc(db, 'porridge_recipes', id));
+  if (!snap.exists()) return;
+
+  editRecipe = snap.data();
+  editGrains = JSON.parse(JSON.stringify(editRecipe.grains));
+
+  $('edit-name').value  = editRecipe.name;
+  $('edit-memo').value  = editRecipe.memo || '';
+  $('edit-n').value     = editRecipe.n;
+  $('edit-meals').value = editRecipe.meals;
+  $('edit-days').value  = editRecipe.days;
+  renderEditGrains();
+  $('edit-modal').classList.add('open');
+};
+
+window.closeEditModal = () => {
+  $('edit-modal').classList.remove('open');
+  editRecipe = null;
+  editGrains = [];
+};
+
+function renderEditGrains() {
+  const list = $('edit-grain-list');
+  list.innerHTML = '';
+  editGrains.forEach((g, i) => {
+    const div = document.createElement('div');
+    div.className = 'grain-item';
+    div.innerHTML = `
+      <input type="text" value="${esc(g.name)}" placeholder="잡곡 이름"
+             oninput="editGrains[${i}].name=this.value" />
+      <div class="grain-g-wrap">
+        <button class="grain-stepper" onclick="stepEditGrain(${i},-1)">−</button>
+        <input type="number" value="${g.g}" min="0" step="1" id="edit-grain-input-${i}"
+               oninput="editGrains[${i}].g=+this.value" />
+        <span class="grain-g-label">g</span>
+        <button class="grain-stepper" onclick="stepEditGrain(${i},1)">+</button>
+      </div>
+      <button class="del-btn" onclick="removeEditGrain(${i})">🗑️</button>
+    `;
+    list.appendChild(div);
+  });
+}
+
+window.stepEditGrain = (i, delta) => {
+  editGrains[i].g = Math.max(0, (editGrains[i].g || 0) + delta);
+  const inp = $('edit-grain-input-' + i);
+  if (inp) inp.value = editGrains[i].g;
+};
+
+window.removeEditGrain = (i) => {
+  editGrains.splice(i, 1);
+  renderEditGrains();
+};
+
+window.addEditGrain = () => {
+  editGrains.push({ name: '새 잡곡', g: 1 });
+  renderEditGrains();
+};
+
+window.stepEdit = (id, delta, min, max) => {
+  const el = $(id);
+  el.value = Math.min(max, Math.max(min, (+el.value || 0) + delta));
+};
+
+window.saveEditRecipe = async () => {
+  if (!editRecipe) return;
+  const name = $('edit-name').value.trim();
+  if (!name) {
+    $('edit-name').style.borderColor = '#FF8C69';
+    setTimeout(() => $('edit-name').style.borderColor = '', 1500);
+    return;
+  }
+
+  const btn = $('edit-save-btn');
+  btn.disabled    = true;
+  btn.textContent = '저장 중... 🌀';
+
+  const n          = +$('edit-n').value     || 10;
+  const meals      = +$('edit-meals').value || 1;
+  const days       = +$('edit-days').value  || 1;
+  const totalMeals = meals * days;
+  const grainTotal = editGrains.reduce((s, g) => s + (g.g || 0), 0);
+  const water1     = grainTotal * n;
+
+  const updated = {
+    ...editRecipe,
+    name,
+    memo:          $('edit-memo').value.trim(),
+    n, meals, days,
+    grains:        JSON.parse(JSON.stringify(editGrains)),
+    porridge1:     (grainTotal + water1).toFixed(0),
+    grainTotalAll: (grainTotal  * totalMeals).toFixed(0),
+    waterAll:      (water1      * totalMeals).toFixed(0),
+    updatedAt:     new Date().toLocaleDateString('ko-KR'),
+  };
+
+  try {
+    await setDoc(doc(db, 'porridge_recipes', editRecipe.id), updated);
+    syncStatus('ok', '레시피 수정 완료 ✓');
+    closeEditModal();
+  } catch (e) {
+    syncStatus('err', '수정 실패');
+    alert('수정 실패: ' + e.message);
+  }
+
+  btn.disabled    = false;
+  btn.textContent = '✅ 수정 저장하기';
+};
+
+$('edit-modal').addEventListener('click', (e) => {
+  if (e.target === $('edit-modal')) closeEditModal();
+});
 
 // ── Utility ────────────────────────────────────────────────────────────────
 function esc(str) {

@@ -740,3 +740,133 @@ h1 {
   background: var(--peach-light);
   border-color: var(--peach);
 }
+
+/* ── 수정 버튼 ── */
+.rc-edit {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+  padding: 0 2px;
+  opacity: 0.45;
+  transition: opacity 0.15s;
+}
+.rc-edit:hover { opacity: 1; }
+
+/* ── 수정 모달 ── */
+.edit-modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(61,43,31,0.4);
+  z-index: 200;
+  align-items: flex-end;
+  justify-content: center;
+}
+.edit-modal-overlay.open { display: flex; }
+
+.edit-modal-box {
+  background: var(--surface);
+  border-radius: var(--radius) var(--radius) 0 0;
+  width: 100%;
+  max-width: 540px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 -8px 32px rgba(61,43,31,0.15);
+}
+
+.edit-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.1rem 1.25rem 0.75rem;
+  border-bottom: 1.5px solid var(--border);
+  flex-shrink: 0;
+}
+
+.edit-modal-title {
+  font-family: 'Gaegu', cursive;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.edit-modal-close {
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text2);
+  transition: background 0.15s;
+}
+.edit-modal-close:hover { background: var(--peach-light); border-color: var(--peach); }
+
+.edit-scroll {
+  overflow-y: auto;
+  padding: 1rem 1.25rem;
+  flex: 1;
+}
+
+.edit-section-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0.9rem 0 0.5rem;
+}
+.edit-section-label:first-child { margin-top: 0; }
+
+.edit-setting-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 0.5rem;
+}
+
+.edit-setting-item {
+  flex: 1;
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.edit-setting-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text2);
+  text-align: center;
+}
+
+.edit-modal-box .save-btn {
+  margin: 0;
+  border-radius: 0 0 0 0;
+  flex-shrink: 0;
+}
+
+.edit-num-input {
+  width: 40px;
+  text-align: center;
+  border: none;
+  background: transparent;
+  font-family: 'Gaegu', cursive;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--peach);
+  outline: none;
+  -moz-appearance: textfield;
+}
+.edit-num-input::-webkit-inner-spin-button,
+.edit-num-input::-webkit-outer-spin-button { -webkit-appearance: none; }
