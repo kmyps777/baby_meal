@@ -870,3 +870,104 @@ h1 {
 }
 .edit-num-input::-webkit-inner-spin-button,
 .edit-num-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+/* ── 로그인 화면 ── */
+#login-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  background-image:
+    radial-gradient(circle at 15% 25%, rgba(255,209,182,0.4) 0%, transparent 50%),
+    radial-gradient(circle at 85% 75%, rgba(180,220,180,0.3) 0%, transparent 50%);
+}
+
+.login-box {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 2.5rem 2rem;
+  text-align: center;
+  max-width: 340px;
+  width: 100%;
+  box-shadow: 0 8px 32px rgba(255,140,105,0.12);
+}
+
+.login-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+}
+
+.login-box h2 {
+  font-family: 'Gaegu', cursive;
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.login-box p {
+  font-size: 14px;
+  color: var(--text2);
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+}
+
+.login-btn {
+  width: 100%;
+  padding: 12px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 15px;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-weight: 500;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.login-btn:hover {
+  border-color: var(--peach);
+  background: var(--peach-light);
+}
+
+/* ── 헤더 유저 영역 ── */
+.header-right {
+  position: absolute;
+  top: 1rem;
+  right: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  z-index: 1;
+}
+
+.user-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.6);
+  vertical-align: middle;
+}
+
+.user-name {
+  font-size: 12px;
+  color: rgba(255,255,255,0.9);
+  vertical-align: middle;
+  margin: 0 4px;
+}
+
+.logout-btn {
+  background: rgba(255,255,255,0.2);
+  border: 1px solid rgba(255,255,255,0.4);
+  border-radius: 99px;
+  color: #fff;
+  font-size: 11px;
+  font-family: 'Noto Sans KR', sans-serif;
+  padding: 3px 10px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.logout-btn:hover { background: rgba(255,255,255,0.35); }

@@ -10,7 +10,18 @@
 </head>
 <body>
 
-  <div class="app">
+  <!-- 로그인 화면 -->
+  <div id="login-screen">
+    <div class="login-box">
+      <div class="login-icon">🍚</div>
+      <h2>이유식 죽 계산기</h2>
+      <p>우리 아기 맞춤 레시피를 저장하고<br>어디서든 불러와요 🌿</p>
+      <button class="login-btn" id="login-btn">🔑 Google로 시작하기</button>
+    </div>
+  </div>
+
+  <!-- 메인 앱 -->
+  <div class="app" id="app-main" style="display:none">
 
     <header class="app-header">
       <div class="header-content">
@@ -18,9 +29,12 @@
         <h1>이유식 죽 계산기</h1>
         <p class="app-sub">우리 아기 맞춤 재료량을 계산해요 🌿</p>
       </div>
-      <div class="sync-pill" id="sync-pill">
-        <span class="sync-dot" id="sync-dot"></span>
-        <span id="sync-label">연결 중...</span>
+      <div class="header-right">
+        <div class="sync-pill">
+          <span class="sync-dot" id="sync-dot"></span>
+          <span id="sync-label">연결 중...</span>
+        </div>
+        <div id="user-info"></div>
       </div>
     </header>
 
