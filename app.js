@@ -9,12 +9,12 @@ import {
 
 // ── Firebase ───────────────────────────────────────────────────────────────
 const firebaseConfig = {
-  apiKey:            "AIzaSyDCctDeWhfVRWQ7Ju4keBxA-KGho_BqVCk",
-  authDomain:        "baby-meal-4cecc.firebaseapp.com",
-  projectId:         "baby-meal-4cecc",
-  storageBucket:     "baby-meal-4cecc.firebasestorage.app",
-  messagingSenderId: "747705591680",
-  appId:             "1:747705591680:web:9bd314a3ab8e82d4c34365",
+  apiKey:            "AIzaSyDW8PxIhzgxiF1IkIy5BbVx-4lJ1cU2ycU",
+  authDomain:        "base-meal.firebaseapp.com",
+  projectId:         "base-meal",
+  storageBucket:     "base-meal.firebasestorage.app",
+  messagingSenderId: "383257673034",
+  appId:             "1:383257673034:web:6216029d9ccaa9ef4655b3",
 };
 const fbApp    = initializeApp(firebaseConfig);
 const db       = getFirestore(fbApp);
