@@ -1,0 +1,26 @@
+{
+  "name": "base_meal",
+  "version": "1.0.0",
+  "description": "Firebase Firestore 기반의 이유식 베이스죽 재료 계산기입니다. iPhone · MacBook 등 모든 기기에서 실시간 동기화됩니다.",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kmyps777/baby_meal.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/kmyps777/baby_meal/issues"
+  },
+  "homepage": "https://github.com/kmyps777/baby_meal#readme",
+  "dependencies": {
+    "@capacitor/cli": "^8.3.0",
+    "@capacitor/core": "^8.3.0",
+    "@capacitor/ios": "^8.3.0"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "name": "베이스죽계산기",
+  "short_name": "베이스죽",
+  "description": "이유식 베이스죽 재료량 계산기",
+  "start_url": "/baby_meal/",
+  "scope": "/baby_meal/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FF8C69",
+  "theme_color": "#FF8C69",
+  "lang": "ko",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

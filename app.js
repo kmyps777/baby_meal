@@ -55,14 +55,6 @@ function syncStatus(state, msg) {
 // ── Auth state ─────────────────────────────────────────────────────────────
 onAuthStateChanged(auth, async (user) => {
   if (user) {
-    // 허용된 사용자인지 확인
-    const allowed = await checkAllowed(user.email);
-    if (!allowed) {
-      await signOut(auth);
-      showApp(false);
-      showDenied(user.email);
-      return;
-    }
     currentUser = user;
     showApp(true);
     renderUserInfo(user);
@@ -77,30 +69,6 @@ onAuthStateChanged(auth, async (user) => {
     showApp(false);
   }
 });
-
-// ── 허용 사용자 확인 ───────────────────────────────────────────────────────
-async function checkAllowed(email) {
-  try {
-    const snap = await getDoc(doc(db, 'allowedUsers', email));
-    return snap.exists();
-  } catch (e) {
-    console.error(e);
-    return false;
-  }
-}
-
-function showDenied(email) {
-  $('login-screen').style.display = 'flex';
-  $('login-box-content').innerHTML = `
-    <div class="login-icon">🚫</div>
-    <h2>접근 권한 없음</h2>
-    <p><strong>${email}</strong> 계정은<br>아직 허용되지 않았어요.<br><br>관리자에게 문의해주세요 🙏</p>
-    <button class="login-btn" id="login-btn" style="margin-top:0.5rem">다른 계정으로 시도</button>
-  `;
-  $('login-btn').addEventListener('click', () =>
-    signInWithPopup(auth, provider).catch(e => alert('로그인 실패: ' + e.message))
-  );
-}
 
 function showApp(yes) {
   $('app-main').style.display    = yes ? '' : 'none';
