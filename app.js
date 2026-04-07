@@ -1,33 +1,22 @@
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-import {
-  getFirestore, doc, setDoc, deleteDoc,
-  collection, onSnapshot, getDoc,
-} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
-import {
-  getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged,
-} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-// ── Firebase ───────────────────────────────────────────────────────────────
-const firebaseConfig = {
-  apiKey:            "AIzaSyDW8PxIhzgxiF1IkIy5BbVx-4lJ1cU2ycU",
-  authDomain:        "base-meal.firebaseapp.com",
-  projectId:         "base-meal",
-  storageBucket:     "base-meal.firebasestorage.app",
-  messagingSenderId: "383257673034",
-  appId:             "1:383257673034:web:6216029d9ccaa9ef4655b3",
-};
-const fbApp    = initializeApp(firebaseConfig);
-const db       = getFirestore(fbApp);
-const auth     = getAuth(fbApp);
-const provider = new GoogleAuthProvider();
+const SUPABASE_URL = 'https://zhqegcdhaqsblvzbpexe.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpocWVnY2RoYXFzYmx2emJwZXhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1Mjk3MjgsImV4cCI6MjA5MTEwNTcyOH0.UnR5s4QeMMcOlF-qiBSCGBTWzgUile_R7EQOogFJqDk';
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// ── 사용자별 Firestore 경로 ────────────────────────────────────────────────
-let currentUser  = null;
-let unsubRecipes = null;
+// ── Device ID ──────────────────────────────────────────────────────────────
+function getDeviceId() {
+  let id = localStorage.getItem('device_id');
+  if (!id) {
+    id = 'dev_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+    localStorage.setItem('device_id', id);
+  }
+  return id;
+}
+const DEVICE_ID = getDeviceId();
 
-const settingsRef = () => doc(db, 'users', currentUser.uid, 'settings', 'porridge_settings');
-const recipesCol  = () => collection(db, 'users', currentUser.uid, 'recipes');
-const recipeDoc   = (id) => doc(db, 'users', currentUser.uid, 'recipes', id);
+// ── 이메일 상태 ────────────────────────────────────────────────────────────
+let linkedEmail = localStorage.getItem('linked_email') || null;
 
 // ── State ──────────────────────────────────────────────────────────────────
 const DEFAULT_GRAINS = [
@@ -40,7 +29,6 @@ const DEFAULT_GRAINS = [
 ];
 let grains         = JSON.parse(JSON.stringify(DEFAULT_GRAINS));
 let saveSettingsTm = null;
-let fbReady        = false;
 
 // ── DOM ────────────────────────────────────────────────────────────────────
 const $ = id => document.getElementById(id);
@@ -51,46 +39,6 @@ function syncStatus(state, msg) {
   $('sync-dot').className     = 'sync-dot ' + state;
   $('sync-label').textContent = msg;
 }
-
-// ── Auth state ─────────────────────────────────────────────────────────────
-onAuthStateChanged(auth, async (user) => {
-  if (user) {
-    currentUser = user;
-    showApp(true);
-    renderUserInfo(user);
-    syncStatus('loading', '불러오는 중...');
-    grains = JSON.parse(JSON.stringify(DEFAULT_GRAINS));
-    await loadSettings();
-    subscribeRecipes();
-  } else {
-    currentUser = null;
-    fbReady     = false;
-    if (unsubRecipes) { unsubRecipes(); unsubRecipes = null; }
-    showApp(false);
-  }
-});
-
-function showApp(yes) {
-  $('app-main').style.display    = yes ? '' : 'none';
-  $('login-screen').style.display = yes ? 'none' : 'flex';
-}
-
-function renderUserInfo(user) {
-  $('user-info').innerHTML = `
-    <img src="${user.photoURL}" class="user-avatar" alt="" />
-    <span class="user-name">${user.displayName.split(' ')[0]}</span>
-    <button class="logout-btn" onclick="signOut(auth)">로그아웃</button>
-  `;
-}
-
-// 로그인 버튼
-$('login-btn').addEventListener('click', () =>
-  signInWithPopup(auth, provider).catch(e => alert('로그인 실패: ' + e.message))
-);
-
-// window에 signOut 노출 (인라인 onclick용)
-window.auth = auth;
-window.signOut = signOut;
 
 // ── Tab switching ──────────────────────────────────────────────────────────
 window.switchTab = (tab) => {
@@ -109,45 +57,208 @@ window.stepValue = (id, delta) => {
 
 window.stepEdit = (id, delta, min, max) => {
   const el = $(id);
-  el.value = Math.min(max, Math.max(min, (+el.value || 0) + delta));
+  el.value = Math.min(max, Math.max(min, (+el.value||0) + delta));
+};
+
+// ── 이메일 백업 UI ─────────────────────────────────────────────────────────
+function renderEmailBackupUI() {
+  const el = $('email-backup-area');
+  if (linkedEmail) {
+    el.innerHTML = `
+      <div class="email-linked-box">
+        <div class="email-linked-label">📧 연결된 이메일</div>
+        <div class="email-linked-value">${esc(linkedEmail)}</div>
+        <div class="email-btn-row">
+          <button class="email-btn-sync" onclick="syncFromEmail()">📥 이 기기로 불러오기</button>
+          <button class="email-btn-unlink" onclick="unlinkEmail()">연결 해제</button>
+        </div>
+      </div>
+    `;
+  } else {
+    el.innerHTML = `
+      <div class="email-input-box">
+        <p class="email-desc">이메일을 입력하면 기기가 바뀌어도 데이터를 유지할 수 있어요.</p>
+        <input type="email" id="backup-email-input" placeholder="이메일 주소 입력" class="save-input" style="margin-bottom:8px" />
+        <button class="save-btn" onclick="linkEmail()" style="background:linear-gradient(135deg,#74B9E0,#185FA5)">
+          📧 이메일로 백업하기
+        </button>
+      </div>
+    `;
+  }
+}
+
+// ── 이메일 연결 ────────────────────────────────────────────────────────────
+window.linkEmail = async () => {
+  const email = $('backup-email-input')?.value.trim().toLowerCase();
+  if (!email || !email.includes('@')) {
+    alert('올바른 이메일을 입력해주세요.');
+    return;
+  }
+
+  syncStatus('loading', '백업 중...');
+  try {
+    // 기존 이메일 데이터가 있는지 확인
+    const { data: existing } = await sb
+      .from('settings')
+      .select('device_id')
+      .eq('email', email)
+      .single();
+
+    if (existing && existing.device_id !== DEVICE_ID) {
+      const confirm = window.confirm(
+        `이미 다른 기기에서 이 이메일로 백업된 데이터가 있어요.\n\n현재 기기 데이터로 덮어쓸까요?\n(취소하면 기존 데이터를 불러와요)`
+      );
+      if (!confirm) {
+        // 기존 데이터 불러오기
+        linkedEmail = email;
+        localStorage.setItem('linked_email', email);
+        await syncFromEmail();
+        return;
+      }
+    }
+
+    // 현재 데이터를 이메일과 연결해서 저장
+    await sb.from('settings').upsert({
+      device_id:  DEVICE_ID,
+      email,
+      grains,
+      n:     num('n-mult'),
+      meals: num('meals-per-day'),
+      days:  num('days'),
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'device_id' });
+
+    // 레시피도 이메일 연결
+    const { data: myRecipes } = await sb
+      .from('recipes')
+      .select('id')
+      .eq('device_id', DEVICE_ID);
+
+    if (myRecipes?.length) {
+      await sb.from('recipes')
+        .update({ email })
+        .eq('device_id', DEVICE_ID);
+    }
+
+    linkedEmail = email;
+    localStorage.setItem('linked_email', email);
+    syncStatus('ok', '이메일 백업 완료 ✓');
+    renderEmailBackupUI();
+    alert(`✅ 백업 완료!\n${email} 로 데이터가 연결됐어요.`);
+  } catch(e) {
+    syncStatus('err', '백업 실패');
+    alert('백업 실패: ' + e.message);
+  }
+};
+
+// ── 이메일로 데이터 불러오기 ───────────────────────────────────────────────
+window.syncFromEmail = async () => {
+  if (!linkedEmail) return;
+  syncStatus('loading', '불러오는 중...');
+  try {
+    // 설정 불러오기
+    const { data: s } = await sb
+      .from('settings')
+      .select('*')
+      .eq('email', linkedEmail)
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (s) {
+      if (s.grains) grains = s.grains;
+      if (s.n)      $('n-mult').value        = s.n;
+      if (s.meals)  $('meals-per-day').value = s.meals;
+      if (s.days)   $('days').value          = s.days;
+      renderGrains(); calc();
+
+      // 이 기기 ID로 업데이트
+      await sb.from('settings').upsert({
+        ...s,
+        device_id: DEVICE_ID,
+        email: linkedEmail,
+      }, { onConflict: 'device_id' });
+    }
+
+    // 레시피 불러오기
+    const { data: recipes } = await sb
+      .from('recipes')
+      .select('*')
+      .eq('email', linkedEmail)
+      .order('created_ts', { ascending: false });
+
+    if (recipes?.length) {
+      for (const r of recipes) {
+        await sb.from('recipes').upsert({
+          ...r,
+          device_id: DEVICE_ID,
+          email: linkedEmail,
+        }, { onConflict: 'id' });
+      }
+    }
+
+    syncStatus('ok', '불러오기 완료 ✓');
+    loadRecipesList();
+    alert(`✅ 불러오기 완료!\n설정 + 레시피 ${recipes?.length || 0}개`);
+  } catch(e) {
+    syncStatus('err', '불러오기 실패');
+    alert('불러오기 실패: ' + e.message);
+  }
+};
+
+// ── 이메일 연결 해제 ───────────────────────────────────────────────────────
+window.unlinkEmail = () => {
+  if (!confirm('이메일 연결을 해제할까요?\n(데이터는 삭제되지 않아요)')) return;
+  linkedEmail = null;
+  localStorage.removeItem('linked_email');
+  renderEmailBackupUI();
+  syncStatus('ok', '연결 해제됨');
 };
 
 // ── Load settings ──────────────────────────────────────────────────────────
 async function loadSettings() {
+  syncStatus('loading', '불러오는 중...');
   try {
-    const snap = await getDoc(settingsRef());
-    if (snap.exists()) {
-      const d = snap.data();
-      if (d.grains) grains = d.grains;
-      if (d.n)      $('n-mult').value        = d.n;
-      if (d.meals)  $('meals-per-day').value = d.meals;
-      if (d.days)   $('days').value          = d.days;
+    const { data } = await sb
+      .from('settings')
+      .select('*')
+      .eq('device_id', DEVICE_ID)
+      .single();
+    if (data) {
+      if (data.grains) grains = data.grains;
+      if (data.n)      $('n-mult').value        = data.n;
+      if (data.meals)  $('meals-per-day').value = data.meals;
+      if (data.days)   $('days').value          = data.days;
+      if (data.email && !linkedEmail) {
+        linkedEmail = data.email;
+        localStorage.setItem('linked_email', data.email);
+      }
     }
-    syncStatus('ok', '동기화됨 ✓');
-    fbReady = true;
-  } catch (e) {
-    syncStatus('err', '연결 실패');
-    console.error(e);
+    syncStatus('ok', '불러옴 ✓');
+  } catch(e) {
+    syncStatus('ok', '새 기기');
   }
   renderGrains();
   calc();
+  renderEmailBackupUI();
 }
 
 // ── Save settings (debounced) ──────────────────────────────────────────────
 function scheduleSettingsSave() {
   clearTimeout(saveSettingsTm);
   saveSettingsTm = setTimeout(async () => {
-    if (!fbReady || !currentUser) return;
     try {
-      await setDoc(settingsRef(), {
+      await sb.from('settings').upsert({
+        device_id:  DEVICE_ID,
+        email:      linkedEmail,
         grains,
         n:     num('n-mult'),
         meals: num('meals-per-day'),
         days:  num('days'),
-        updatedAt: new Date().toISOString(),
-      });
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'device_id' });
       syncStatus('ok', '저장됨 ✓');
-    } catch (e) {
+    } catch(e) {
       syncStatus('err', '저장 실패');
     }
   }, 800);
@@ -176,19 +287,19 @@ function renderGrains() {
   });
 }
 
-window.updateGrain = (i, key, val) => { grains[i][key] = val; calc(); scheduleSettingsSave(); };
+window.updateGrain = (i, key, val) => { grains[i][key]=val; calc(); scheduleSettingsSave(); };
 
 window.stepGrain = (i, delta) => {
-  grains[i].g = Math.max(0, (grains[i].g || 0) + delta);
-  const inp = $('grain-input-' + i);
+  grains[i].g = Math.max(0,(grains[i].g||0)+delta);
+  const inp = $('grain-input-'+i);
   if (inp) inp.value = grains[i].g;
   calc(); scheduleSettingsSave();
 };
 
-window.removeGrain = (i) => { grains.splice(i, 1); renderGrains(); calc(); scheduleSettingsSave(); };
+window.removeGrain = (i) => { grains.splice(i,1); renderGrains(); calc(); scheduleSettingsSave(); };
 
 $('add-grain-btn').addEventListener('click', () => {
-  grains.push({ name: '새 잡곡', g: 1 });
+  grains.push({name:'새 잡곡',g:1});
   renderGrains(); calc(); scheduleSettingsSave();
 });
 
@@ -196,23 +307,20 @@ $('add-grain-btn').addEventListener('click', () => {
 
 // ── Calculation ────────────────────────────────────────────────────────────
 function calc() {
-  const n          = num('n-mult')        || 10;
-  const meals      = num('meals-per-day') || 1;
-  const days       = num('days')          || 1;
-  const totalMeals = meals * days;
+  const n=num('n-mult')||10, meals=num('meals-per-day')||1, days=num('days')||1;
+  const totalMeals=meals*days;
+  $('total-meals-display').textContent=totalMeals;
 
-  $('total-meals-display').textContent = totalMeals;
+  const grainTotal1=grains.reduce((s,g)=>s+(g.g||0),0);
+  const water1=grainTotal1*n;
+  const porridge1=grainTotal1+water1;
 
-  const grainTotal1 = grains.reduce((s, g) => s + (g.g || 0), 0);
-  const water1      = grainTotal1 * n;
-  const porridge1   = grainTotal1 + water1;
-
-  const ingList = $('ingredient-list');
-  ingList.innerHTML = '';
-  grains.forEach((g) => {
-    const row = document.createElement('div');
-    row.className = 'ingredient-row';
-    row.innerHTML = `
+  const ingList=$('ingredient-list');
+  ingList.innerHTML='';
+  grains.forEach(g => {
+    const row=document.createElement('div');
+    row.className='ingredient-row';
+    row.innerHTML=`
       <div class="ing-info">
         <div class="ing-name">${esc(g.name)}</div>
         <div class="ing-detail">1회 ${g.g}g × ${totalMeals}끼</div>
@@ -222,9 +330,9 @@ function calc() {
     ingList.appendChild(row);
   });
 
-  const waterRow = document.createElement('div');
-  waterRow.className = 'ingredient-row water-row';
-  waterRow.innerHTML = `
+  const waterRow=document.createElement('div');
+  waterRow.className='ingredient-row water-row';
+  waterRow.innerHTML=`
     <div class="ing-info">
       <div class="ing-name">💧 물</div>
       <div class="ing-detail">1회 ${water1.toFixed(0)}g × ${totalMeals}끼 (${n}배죽)</div>
@@ -233,101 +341,105 @@ function calc() {
   `;
   ingList.appendChild(waterRow);
 
-  $('r-grain-total').textContent = (grainTotal1*totalMeals).toFixed(0) + 'g';
-  $('r-water-total').textContent = (water1*totalMeals).toFixed(0) + 'g';
-  $('r-grand-total').textContent = (porridge1*totalMeals).toFixed(0) + 'g';
-  $('porridge-hint').textContent =
-    `🍲 1회 베이스죽 재료량 약 ${porridge1.toFixed(0)}g · 밥솥 조리 후 실제 완성량은 약간 줄어들어요`;
+  $('r-grain-total').textContent=(grainTotal1*totalMeals).toFixed(0)+'g';
+  $('r-water-total').textContent=(water1*totalMeals).toFixed(0)+'g';
+  $('r-grand-total').textContent=(porridge1*totalMeals).toFixed(0)+'g';
+  $('porridge-hint').textContent=`🍲 1회 베이스죽 재료량 약 ${porridge1.toFixed(0)}g · 밥솥 조리 후 실제 완성량은 약간 줄어들어요`;
 
   scheduleSettingsSave();
 }
 
 // ── Save recipe ────────────────────────────────────────────────────────────
 $('save-btn').addEventListener('click', async () => {
-  if (!currentUser) return;
-  const name = $('recipe-name').value.trim();
+  const name=$('recipe-name').value.trim();
   if (!name) {
-    $('recipe-name').style.borderColor = '#FF8C69';
-    setTimeout(() => $('recipe-name').style.borderColor = '', 1500);
+    $('recipe-name').style.borderColor='#FF8C69';
+    setTimeout(()=>$('recipe-name').style.borderColor='',1500);
     return;
   }
-  const btn = $('save-btn');
-  btn.disabled = true; btn.textContent = '저장 중... 🌀';
+  const btn=$('save-btn');
+  btn.disabled=true; btn.textContent='저장 중... 🌀';
 
   const n=num('n-mult')||10, meals=num('meals-per-day')||1, days=num('days')||1;
   const totalMeals=meals*days;
   const grainTotal=grains.reduce((s,g)=>s+(g.g||0),0);
   const water1=grainTotal*n;
-  const id = 'r_' + Date.now();
+  const id='r_'+Date.now();
 
   try {
-    await setDoc(recipeDoc(id), {
-      id, name, n, meals, days,
-      memo:          $('recipe-memo').value.trim(),
-      grains:        JSON.parse(JSON.stringify(grains)),
-      porridge1:     (grainTotal+water1).toFixed(0),
-      grainTotalAll: (grainTotal*totalMeals).toFixed(0),
-      waterAll:      (water1*totalMeals).toFixed(0),
-      createdAt:     new Date().toLocaleDateString('ko-KR'),
-      createdTs:     Date.now(),
+    await sb.from('recipes').insert({
+      id, device_id:DEVICE_ID, email:linkedEmail, name,
+      memo:           $('recipe-memo').value.trim(),
+      n, meals, days,
+      grains:         JSON.parse(JSON.stringify(grains)),
+      porridge1:      (grainTotal+water1).toFixed(0),
+      grain_total_all:(grainTotal*totalMeals).toFixed(0),
+      water_all:      (water1*totalMeals).toFixed(0),
+      created_at:     new Date().toLocaleDateString('ko-KR'),
+      created_ts:     Date.now(),
     });
-    $('recipe-name').value = '';
-    $('recipe-memo').value = '';
-    syncStatus('ok', '레시피 저장 완료 🌟');
+    $('recipe-name').value='';
+    $('recipe-memo').value='';
+    syncStatus('ok','레시피 저장 완료 🌟');
     window.switchTab('recipes');
-  } catch(e) { syncStatus('err','저장 실패'); alert('저장 실패: '+e.message); }
-
+    loadRecipesList();
+  } catch(e) {
+    syncStatus('err','저장 실패');
+    alert('저장 실패: '+e.message);
+  }
   btn.disabled=false; btn.textContent='🌟 레시피 저장하기';
 });
 
 // ── Delete recipe ──────────────────────────────────────────────────────────
 window.deleteRecipe = async (id) => {
-  if (!currentUser || !confirm('이 레시피를 삭제할까요?')) return;
-  try { await deleteDoc(recipeDoc(id)); syncStatus('ok','레시피 삭제됨'); }
-  catch(e) { syncStatus('err','삭제 실패'); }
+  if (!confirm('이 레시피를 삭제할까요?')) return;
+  try {
+    await sb.from('recipes').delete().eq('id',id).eq('device_id',DEVICE_ID);
+    syncStatus('ok','레시피 삭제됨');
+    loadRecipesList();
+  } catch(e) { syncStatus('err','삭제 실패'); }
 };
 
 // ── Load recipe into form ──────────────────────────────────────────────────
 window.loadRecipe = (r) => {
-  grains = JSON.parse(JSON.stringify(r.grains));
-  $('n-mult').value = r.n;
-  $('meals-per-day').value = r.meals;
-  $('days').value = r.days;
+  grains=JSON.parse(JSON.stringify(r.grains));
+  $('n-mult').value=r.n;
+  $('meals-per-day').value=r.meals;
+  $('days').value=r.days;
   renderGrains(); calc();
-  syncStatus('ok', `"${r.name}" 불러옴 ✓`);
+  syncStatus('ok',`"${r.name}" 불러옴 ✓`);
   window.switchTab('calc');
-  window.scrollTo({ top:0, behavior:'smooth' });
+  window.scrollTo({top:0,behavior:'smooth'});
 };
 
-// ── Real-time recipes ──────────────────────────────────────────────────────
-function subscribeRecipes() {
-  if (unsubRecipes) unsubRecipes();
-  unsubRecipes = onSnapshot(recipesCol(), (snap) => {
-    renderRecipes(snap.docs.map(d => d.data()));
-  }, () => {
-    $('recipes-list').innerHTML =
-      '<div class="empty-state"><div class="empty-icon">⚠️</div><div>읽기 실패. 보안 규칙을 확인해주세요.</div></div>';
-  });
+// ── Load recipes list ──────────────────────────────────────────────────────
+async function loadRecipesList() {
+  const { data:list } = await sb
+    .from('recipes')
+    .select('*')
+    .eq('device_id', DEVICE_ID)
+    .order('created_ts', { ascending:false });
+  renderRecipes(list||[]);
 }
 
 // ── Render recipe list ─────────────────────────────────────────────────────
 function renderRecipes(list) {
-  const badge = $('recipe-badge');
-  badge.style.display = list.length ? 'inline-flex' : 'none';
-  if (list.length) badge.textContent = list.length;
+  const badge=$('recipe-badge');
+  badge.style.display=list.length?'inline-flex':'none';
+  if (list.length) badge.textContent=list.length;
 
-  const el = $('recipes-list');
+  const el=$('recipes-list');
   if (!list.length) {
-    el.innerHTML = `<div class="empty-state"><div class="empty-icon">🥣</div><div>저장된 레시피가 없어요<br>계산 탭에서 저장해보세요!</div></div>`;
+    el.innerHTML=`<div class="empty-state"><div class="empty-icon">🥣</div><div>저장된 레시피가 없어요<br>계산 탭에서 저장해보세요!</div></div>`;
     return;
   }
-  el.innerHTML = '';
-  [...list].sort((a,b)=>(b.createdTs||0)-(a.createdTs||0)).forEach(r => {
-    const div = document.createElement('div');
-    div.className = 'recipe-card';
-    const grainStr = r.grains.map(g=>`${esc(g.name)} ${g.g}g`).join(' · ');
-    const memoHtml = r.memo ? `<div class="rc-memo">✏️ ${esc(r.memo)}</div>` : '';
-    div.innerHTML = `
+  el.innerHTML='';
+  list.forEach(r => {
+    const div=document.createElement('div');
+    div.className='recipe-card';
+    const grainStr=r.grains.map(g=>`${esc(g.name)} ${g.g}g`).join(' · ');
+    const memoHtml=r.memo?`<div class="rc-memo">✏️ ${esc(r.memo)}</div>`:'';
+    div.innerHTML=`
       <div class="rc-header">
         <span class="rc-name">🍚 ${esc(r.name)}</span>
         <div class="rc-top-right">
@@ -339,50 +451,48 @@ function renderRecipes(list) {
       <div class="rc-grains">🌾 ${grainStr}</div>
       <div class="rc-calc">
         <span class="rc-pill">🍽️ ${r.meals}끼 × ${r.days}일</span>
-        <span class="rc-pill">🌾 잡곡 ${r.grainTotalAll}g</span>
-        <span class="rc-pill">💧 물 ${r.waterAll}g</span>
+        <span class="rc-pill">🌾 잡곡 ${r.grain_total_all}g</span>
+        <span class="rc-pill">💧 물 ${r.water_all}g</span>
         <span class="rc-pill">🍲 1회 약 ${r.porridge1}g</span>
       </div>
       ${memoHtml}
-      <div class="rc-date">📅 ${r.createdAt}</div>
+      <div class="rc-date">📅 ${r.created_at}</div>
       <div class="rc-load-hint">탭하면 이 레시피로 불러오기 →</div>
     `;
-    div.addEventListener('click', () => window.loadRecipe(r));
+    div.addEventListener('click',()=>window.loadRecipe(r));
     el.appendChild(div);
   });
 }
 
 // ── Edit modal ─────────────────────────────────────────────────────────────
-let editRecipe = null;
-let editGrains = [];
+let editRecipe=null, editGrains=[];
 
 window.openEditModal = async (id) => {
-  if (!currentUser) return;
-  const snap = await getDoc(recipeDoc(id));
-  if (!snap.exists()) return;
-  editRecipe = snap.data();
-  editGrains = JSON.parse(JSON.stringify(editRecipe.grains));
-  $('edit-name').value  = editRecipe.name;
-  $('edit-memo').value  = editRecipe.memo || '';
-  $('edit-n').value     = editRecipe.n;
-  $('edit-meals').value = editRecipe.meals;
-  $('edit-days').value  = editRecipe.days;
+  const {data}=await sb.from('recipes').select('*').eq('id',id).single();
+  if (!data) return;
+  editRecipe=data;
+  editGrains=JSON.parse(JSON.stringify(data.grains));
+  $('edit-name').value=data.name;
+  $('edit-memo').value=data.memo||'';
+  $('edit-n').value=data.n;
+  $('edit-meals').value=data.meals;
+  $('edit-days').value=data.days;
   renderEditGrains();
   $('edit-modal').classList.add('open');
 };
 
 window.closeEditModal = () => {
   $('edit-modal').classList.remove('open');
-  editRecipe = null; editGrains = [];
+  editRecipe=null; editGrains=[];
 };
 
 function renderEditGrains() {
-  const list = $('edit-grain-list');
-  list.innerHTML = '';
-  editGrains.forEach((g, i) => {
-    const div = document.createElement('div');
-    div.className = 'grain-item';
-    div.innerHTML = `
+  const list=$('edit-grain-list');
+  list.innerHTML='';
+  editGrains.forEach((g,i) => {
+    const div=document.createElement('div');
+    div.className='grain-item';
+    div.innerHTML=`
       <input type="text" value="${esc(g.name)}" placeholder="잡곡 이름"
              oninput="editGrains[${i}].name=this.value" />
       <div class="grain-g-wrap">
@@ -398,24 +508,23 @@ function renderEditGrains() {
   });
 }
 
-window.stepEditGrain = (i, delta) => {
-  editGrains[i].g = Math.max(0, (editGrains[i].g||0) + delta);
-  const inp = $('edit-grain-input-'+i);
-  if (inp) inp.value = editGrains[i].g;
+window.stepEditGrain=(i,delta)=>{
+  editGrains[i].g=Math.max(0,(editGrains[i].g||0)+delta);
+  const inp=$('edit-grain-input-'+i);
+  if(inp) inp.value=editGrains[i].g;
 };
-
-window.removeEditGrain = (i) => { editGrains.splice(i,1); renderEditGrains(); };
-window.addEditGrain    = ()    => { editGrains.push({name:'새 잡곡',g:1}); renderEditGrains(); };
+window.removeEditGrain=(i)=>{editGrains.splice(i,1);renderEditGrains();};
+window.addEditGrain=()=>{editGrains.push({name:'새 잡곡',g:1});renderEditGrains();};
 
 window.saveEditRecipe = async () => {
-  if (!currentUser || !editRecipe) return;
-  const name = $('edit-name').value.trim();
+  if (!editRecipe) return;
+  const name=$('edit-name').value.trim();
   if (!name) {
-    $('edit-name').style.borderColor = '#FF8C69';
-    setTimeout(() => $('edit-name').style.borderColor = '', 1500);
+    $('edit-name').style.borderColor='#FF8C69';
+    setTimeout(()=>$('edit-name').style.borderColor='',1500);
     return;
   }
-  const btn = $('edit-save-btn');
+  const btn=$('edit-save-btn');
   btn.disabled=true; btn.textContent='저장 중... 🌀';
 
   const n=+$('edit-n').value||10, meals=+$('edit-meals').value||1, days=+$('edit-days').value||1;
@@ -424,25 +533,27 @@ window.saveEditRecipe = async () => {
   const water1=grainTotal*n;
 
   try {
-    await setDoc(recipeDoc(editRecipe.id), {
-      ...editRecipe, name,
-      memo:          $('edit-memo').value.trim(),
+    await sb.from('recipes').update({
+      name, memo:$('edit-memo').value.trim(),
       n, meals, days,
-      grains:        JSON.parse(JSON.stringify(editGrains)),
-      porridge1:     (grainTotal+water1).toFixed(0),
-      grainTotalAll: (grainTotal*totalMeals).toFixed(0),
-      waterAll:      (water1*totalMeals).toFixed(0),
-      updatedAt:     new Date().toLocaleDateString('ko-KR'),
-    });
+      grains:         JSON.parse(JSON.stringify(editGrains)),
+      porridge1:      (grainTotal+water1).toFixed(0),
+      grain_total_all:(grainTotal*totalMeals).toFixed(0),
+      water_all:      (water1*totalMeals).toFixed(0),
+      updated_at:     new Date().toLocaleDateString('ko-KR'),
+    }).eq('id',editRecipe.id);
     syncStatus('ok','레시피 수정 완료 ✓');
     closeEditModal();
-  } catch(e) { syncStatus('err','수정 실패'); alert('수정 실패: '+e.message); }
-
+    loadRecipesList();
+  } catch(e) {
+    syncStatus('err','수정 실패');
+    alert('수정 실패: '+e.message);
+  }
   btn.disabled=false; btn.textContent='✅ 수정 저장하기';
 };
 
-$('edit-modal').addEventListener('click', (e) => {
-  if (e.target === $('edit-modal')) closeEditModal();
+$('edit-modal').addEventListener('click',(e)=>{
+  if(e.target===$('edit-modal')) closeEditModal();
 });
 
 // ── Utility ────────────────────────────────────────────────────────────────
@@ -453,4 +564,5 @@ function esc(str) {
 }
 
 // ── Boot ───────────────────────────────────────────────────────────────────
-// loadSettings는 onAuthStateChanged 안에서만 호출됨
+loadSettings();
+loadRecipesList();
