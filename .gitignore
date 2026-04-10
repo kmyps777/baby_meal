@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Xcode
+ios/App/App.xcodeproj/xcuserdata/
+ios/App/xcuserdata/
+*.xcuserstate
+DerivedData/
+
+# Capacitor
+ios/App/Pods/
+
+# Environment
+.env
+.env.local
