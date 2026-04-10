@@ -2,7 +2,7 @@
 
 이유식 베이스죽을 만들 때 필요한 잡곡과 물의 양을 계산해주는 앱입니다.
 
-[App Store에서 다운로드](https://apps.apple.com/app/id)
+[App Store에서 다운로드](https://apps.apple.com/app/id6761471556)
 
 ## 기능
 
