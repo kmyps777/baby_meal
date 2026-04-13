@@ -313,7 +313,7 @@ h1 {
   flex: 1;
   border: none;
   background: transparent;
-  font-size: 14px;
+  font-size: 16px;
   font-family: 'Noto Sans KR', sans-serif;
   color: var(--text);
   outline: none;
@@ -357,7 +357,7 @@ h1 {
   text-align: center;
   border: none;
   background: transparent;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
   font-family: 'Gaegu', cursive;
   color: var(--peach);
@@ -500,7 +500,7 @@ h1 {
   border: 1.5px solid #C2E6C4;
   border-radius: var(--radius-sm);
   background: var(--surface);
-  font-size: 14px;
+  font-size: 16px;
   font-family: 'Noto Sans KR', sans-serif;
   color: var(--text);
   outline: none;
