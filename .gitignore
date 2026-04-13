@@ -12,9 +12,10 @@ ios/App/xcuserdata/
 *.xcuserstate
 DerivedData/
 
-# Capacitor
+# Capacitor (자동 생성 파일)
 ios/App/Pods/
-
-# Environment
-.env
-.env.local
+ios/App/App/public/
+ios/App/App/capacitor.config.json
+ios/App/App/config.xml
+ios/capacitor-cordova-ios-plugins/
+ios/App/CapApp-SPM/.swiftpm/
