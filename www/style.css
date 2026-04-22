@@ -94,8 +94,8 @@ h1 {
 
 .sync-pill {
   position: absolute;
-  top: 1.25rem;
-  right: 1.25rem;
+  top: calc(1.25rem + env(safe-area-inset-top));
+  right: calc(1.25rem + env(safe-area-inset-right));
   display: flex;
   align-items: center;
   gap: 5px;
