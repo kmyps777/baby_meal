@@ -42,7 +42,7 @@ body {
 /* ── Header ── */
 .app-header {
   background: linear-gradient(135deg, #FF8C69 0%, #FFB347 100%);
-  padding: 2rem 1.5rem 1.5rem;
+  padding: calc(2rem + env(safe-area-inset-top)) 1.5rem 1.5rem;
   position: relative;
   overflow: hidden;
 }
